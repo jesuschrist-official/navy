@@ -22,6 +22,7 @@ struct boat {
         enum boat_type type;
         int x1, y1;
         int x2, y2;
+        int life;
 };
 
 
@@ -30,6 +31,7 @@ struct game {
         size_t nboats;
         struct boat boats[MAX_BOATS];
         int grid[10][10];
+        int hits[10][10];
 };
 
 
@@ -55,6 +57,7 @@ int boat_init(struct game* g, enum boat_type type, int x, int y, bool vert, int 
                 .type = type,
                 .x1 = x, .x2 = x2,
                 .y1 = y, .y2 = y2,
+                .life = size
         };
         return 1;
 }
@@ -64,6 +67,7 @@ void game_init(struct game* g) {
         for (int y = 0; y < 10; y++) {
                 for (int x = 0; x < 10; x++) {
                         g->grid[y][x] = -1;
+                        g->hits[y][x] = 0;
                 }
         }
 
@@ -90,7 +94,11 @@ void game_print(const struct game* g) {
         for (int y = 0; y < 10; y++) {
                 for (int x = 0; x < 10; x++) {
                         if (g->grid[y][x] != -1) {
-                                printf("%d ", g->grid[y][x]);
+                                if (g->hits[y][x]) {
+                                        printf("x ");
+                                } else {
+                                        printf("%d ", g->grid[y][x]);
+                                }
                         } else {
                                 printf("  ");
                         }
@@ -100,12 +108,55 @@ void game_print(const struct game* g) {
 }
 
 
+void game_shoot(struct game* g, int x, int y) {
+        if (g->hits[y][x]) {
+                printf("already hit!\n");
+                return;
+        }
+        if (g->grid[y][x] == -1) {
+                printf("missed!\n");
+                return;
+        }
+        g->hits[y][x] = 1;
+        struct boat* boat = g->boats + g->grid[y][x];
+        boat->life--;
+        if (!boat->life) {
+                printf("flew!\n");
+                return;
+        } else {
+                printf("hit!\n");
+                return;
+        }
+}
+
+
+bool game_is_over(const struct game* g) {
+        for (int i = 0; i < MAX_BOATS; i++) {
+                if (g->boats[i].life) {
+                        return false;
+                }
+        }
+        return true;
+}
+
+
 int main(int argc, char** argv) {
         srand(time(NULL));
 
-        struct game g = {0};
-        game_init(&g);
-        game_print(&g);
+        struct game g1 = {0};
+        game_init(&g1);
+        while (!game_is_over(&g1)) {
+                game_print(&g1);
+                int x, y;
+                do {
+                        x = y = -1;
+                        char buf[512] = "";
+                        printf("enter coordinates: ");
+                        fgets(buf, 511, stdin);
+                        sscanf(buf, "%d %d", &x, &y);
+                } while (x < 0 || x > 9 || y < 0 || y > 9);
+                game_shoot(&g1, x, y);
+        }
 
         return 0;
 }
