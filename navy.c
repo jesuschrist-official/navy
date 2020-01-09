@@ -108,16 +108,38 @@ void game_print(const struct game* g) {
 }
 
 
+void game_print_other(const struct game* g) {
+        for (int x = 0; x < 10; x++) {
+                printf("%d ", x);
+        }
+        printf("\n");
+        for (int y = 0; y < 10; y++) {
+                for (int x = 0; x < 10; x++) {
+                        if (g->hits[y][x]) {
+                                if (g->grid[y][x] != -1) {
+                                        printf("x ");
+                                } else {
+                                        printf(". ");
+                                }
+                        } else {
+                                printf("  ");
+                        }
+                }
+                printf("%d\n", y);
+        }
+}
+
+
 void game_shoot(struct game* g, int x, int y) {
         if (g->hits[y][x]) {
                 printf("already hit!\n");
                 return;
         }
+        g->hits[y][x] = 1;
         if (g->grid[y][x] == -1) {
                 printf("missed!\n");
                 return;
         }
-        g->hits[y][x] = 1;
         struct boat* boat = g->boats + g->grid[y][x];
         boat->life--;
         if (!boat->life) {
@@ -144,18 +166,35 @@ int main(int argc, char** argv) {
         srand(time(NULL));
 
         struct game g1 = {0};
+        struct game g2 = {0};
         game_init(&g1);
-        while (!game_is_over(&g1)) {
-                game_print(&g1);
-                int x, y;
-                do {
-                        x = y = -1;
-                        char buf[512] = "";
-                        printf("enter coordinates: ");
-                        fgets(buf, 511, stdin);
-                        sscanf(buf, "%d %d", &x, &y);
-                } while (x < 0 || x > 9 || y < 0 || y > 9);
-                game_shoot(&g1, x, y);
+        game_init(&g2);
+        while (!game_is_over(&g1) && !game_is_over(&g2)) {
+                {
+                        int x = rand() % 10;
+                        int y = rand() % 10;
+                        printf("AI is shooting at %d %d...\n", x, y);
+                        game_shoot(&g1, x, y);
+                        game_print(&g1);
+                        printf("Press a key to continue");
+                        fgetc(stdin);
+                }
+
+                {
+                        printf("Your turn\n");
+                        game_print_other(&g2);
+                        int x, y;
+                        do {
+                                x = y = -1;
+                                char buf[512] = "";
+                                printf("enter coordinates: ");
+                                fgets(buf, 511, stdin);
+                                sscanf(buf, "%d %d", &x, &y);
+                        } while (x < 0 || x > 9 || y < 0 || y > 9);
+                        game_shoot(&g2, x, y);
+                        printf("Press a key to continue");
+                        fgetc(stdin);
+                }
         }
 
         return 0;
